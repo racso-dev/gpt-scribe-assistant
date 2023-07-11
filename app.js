@@ -84,15 +84,21 @@ async function main() {
     const audioFilename = `./records/conversation-${todayDDMMYYYY}.wav`;
 
     recordAudio(audioFilename);
-    const context = '';
+    // Read context from file passed as argument
+    const context = fs.readFileSync(process.argv[2], 'utf8');
+    console.log('Context:', context);
 
     process.on('SIGINT', async () => {
         const transcription = await transcribeAudio(audioFilename);
-        console.log('Transcription:', transcription);
+        console.log('\n\n\nTranscription:', transcription);
         const summary = await summarizeTranscript(context, transcription);
-        console.log('\nSummary:', summary.message.content);
+        console.log('\n\n\nSummary:', summary.message.content);
         process.exit(0);
     });
+
+    while (true) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
 }
 
 main().catch((err) => {

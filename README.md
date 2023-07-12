@@ -45,5 +45,5 @@ This application automates the creation of meeting summaries. It records the aud
 To launch the application, run the following command:
 
 ```sh
-pnpm start
+pnpm start <meeting_context_file_path>
 ```

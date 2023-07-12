@@ -50,27 +50,37 @@ async function transcribeAudio(filename) {
 
 // Summarize transcript
 async function summarizeTranscript(context, transcript) {
-    const prompt = `${context}\nVoici un transcript de la dernière réunion:\n${transcript}`;
+    const prompt = `${context}\nVoici le transcript de la réunion:\n${transcript}`;
+    const messages = [
+        {
+            role: 'user',
+            content:
+                "J'aimerais que tu prennes le rôle d'un scribe de réunion, tu devras rédiger un compte rendu qui résume le transcript que tu receveras en entrée.",
+        },
+        {
+            role: 'assistant',
+            content:
+                "Bien sûr, je suis tout à fait capable d'accomplir cette tâche. N'hésitez pas à me donner un exemple de transcript sur lequel je peux travailler pour générer un compte rendu.",
+        },
+        {
+            role: 'user',
+            content: prompt,
+        },
+    ];
+
+    console.log('Prompt:\n' + messages.map((message) => `${message.role[0].toUpperCase() + message.role.slice(1)}: ${message.content}`).join('\n\n'));
+
     const summary = await openai.createChatCompletion({
         model: 'gpt-3.5-turbo-16k-0613',
-        messages: [
-            {
-                role: 'user',
-                content:
-                    "Dans le cadre de la réalisation d'un outil de rédaction de compte rendus automatique j'aimerais que tu prennes le rôle d'un scribe, tu devras rédiger des comptes rendus d'une trentaine de lignes max du transcript que tu receveras en entrée.",
-            },
-            {
-                role: 'assistant',
-                content:
-                    "Bien sûr, je suis tout à fait capable d'accomplir cette tâche. N'hésitez pas à me donner un exemple de transcript sur lequel je peux travailler pour générer un compte rendu.",
-            },
-            {
-                role: 'user',
-                content: prompt,
-            },
-        ],
+        messages,
     });
     return summary.data.choices[0];
+}
+
+async function loadContext() {
+    const baseContext = fs.readFileSync('./templates/base_context', 'utf8');
+    const context = fs.readFileSync(process.argv[2], 'utf8');
+    return `${baseContext}\n${context}`;
 }
 
 // Main function
@@ -85,14 +95,13 @@ async function main() {
 
     recordAudio(audioFilename);
     // Read context from file passed as argument
-    const context = fs.readFileSync(process.argv[2], 'utf8');
-    console.log('Context:', context);
+    const context = await loadContext();
 
     process.on('SIGINT', async () => {
         const transcription = await transcribeAudio(audioFilename);
         console.log('\n\n\nTranscription:', transcription);
         const summary = await summarizeTranscript(context, transcription);
-        console.log('\n\n\nSummary:', summary.message.content);
+        console.log('\n\n\nCompte rendu:\n', summary.message.content);
         process.exit(0);
     });
 
